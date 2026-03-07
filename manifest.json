@@ -1,6 +1,6 @@
 {
-  "short_name": "PV Caledar 2026",
-  "name": "PV Caledar 2026",
+  "short_name": "PV Calendar 2026",
+  "name": "PV Calendar 2026",
   "icons": [
     {
       "src": "icon.png",
@@ -9,7 +9,8 @@
       "purpose": "any maskable"
     }
   ],
-  "start_url": "/index.html",
+  "start_url": "/PV_CALENDAR_EUR/index.html",
+  "scope": "/PV_CALENDAR_EUR/",
   "display": "standalone",
   "theme_color": "#050505",
   "background_color": "#050505"
