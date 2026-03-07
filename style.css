@@ -316,3 +316,71 @@ select option { background: #121212; color: white; }
     letter-spacing: 0.5px;
     text-transform: uppercase;
 }
+
+/* Estilo para las tarjetas de contacto dentro del modal */
+#modal-contacts {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.contact-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-left: 3px solid var(--accent-color, var(--accent)); /* Color oro o el que uses de acento */
+    padding: 12px;
+    border-radius: 6px;
+    transition: transform 0.2s;
+}
+
+.contact-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.contact-title {
+    display: block;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: #aaa;
+    letter-spacing: 1px;
+    margin-bottom: 2px;
+}
+
+.contact-name {
+    display: block;
+    font-size: 1rem;
+    color: var(--accent);
+    margin-bottom: 8px;
+}
+
+.contact-info {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.contact-info a {
+    color: #ddd;
+    text-decoration: none;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.contact-info a i {
+    width: 14px;
+    color: var(--accent-color, var(--accent));
+    font-size: 0.8rem;
+}
+
+.contact-info a:hover {
+    color: #fff;
+    text-decoration: underline;
+}
+
+.no-data {
+    color: #666;
+    font-style: italic;
+    font-size: 0.9rem;
+}

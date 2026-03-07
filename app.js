@@ -147,7 +147,6 @@ function openModal(ev) {
     document.getElementById('modal-location').innerText = ev.venue;
     document.getElementById('modal-area').innerText = ev.area;
     
-    // Mostramos el nombre adaptado (GOLD, CHALLENGER, etc) en lugar de la letra en el modal
     let catName = ev.category;
     if(catName === 'A') catName = 'GOLD';
     if(catName === 'B') catName = 'SILVER';
@@ -163,14 +162,25 @@ function openModal(ev) {
     // Enlaces
     const linksCont = document.getElementById('modal-links');
     linksCont.innerHTML = '';
-    if (ev.links?.web) linksCont.innerHTML += `<a href="${ev.links.web}" target="_blank" class="link-btn">Web</a>`;
-    if (ev.links?.results) linksCont.innerHTML += `<a href="${ev.links.results}" target="_blank" class="link-btn">Resultados</a>`;
+    if (ev.links?.web) linksCont.innerHTML += `<a href="${ev.links.web}" target="_blank" class="link-btn"><i class="fas fa-external-link-alt"></i> Web</a>`;
+    if (ev.links?.results) linksCont.innerHTML += `<a href="${ev.links.results}" target="_blank" class="link-btn"><i class="fas fa-poll"></i> Resultados</a>`;
 
-    // Contactos
+    // Contactos (MEJORADO con Título y Teléfono)
     const contactCont = document.getElementById('modal-contacts');
     contactCont.innerHTML = ev.contact && ev.contact.length > 0 
-        ? ev.contact.map(p => `<div class="contact-box"><strong>${p.name}</strong><br>${p.email || 'No disponible'}</div>`).join('')
-        : '<p>Sin contactos disponibles.</p>';
+        ? ev.contact.map(p => `
+            <div class="contact-card">
+                <div class="contact-header">
+                    <span class="contact-title">${p.title || 'Organizer'}</span>
+                    <strong class="contact-name">${p.name}</strong>
+                </div>
+                <div class="contact-info">
+                    ${p.email ? `<a href="mailto:${p.email}"><i class="fas fa-envelope"></i> ${p.email}</a>` : ''}
+                    ${p.phoneNumber ? `<a href="tel:${p.phoneNumber}"><i class="fas fa-phone-alt"></i> ${p.phoneNumber}</a>` : ''}
+                </div>
+            </div>
+        `).join('')
+        : '<p class="no-data">Sin contactos disponibles.</p>';
 
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
