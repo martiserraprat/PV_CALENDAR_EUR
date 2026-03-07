@@ -41,17 +41,17 @@ function applyFilters() {
     const level = levelSelect.value;
 
     const filtered = allEvents.filter(ev => {
-        // --- FILTROS FIJOS (LOS QUE TENÍA TU SCRAPER) ---
+        // --- FILTROS FIJOS ---
         
         // 1. Solo Europa
         if (ev.area !== "Europe") return false;
 
-        // 2. Solo categorías A, B, C, D (Excluimos E y F si las hubiera)
-        const validCategories = ['A', 'B', 'C', 'D'];
-        if (!validCategories.includes(ev.category)) return false;
+        // 2. Excluir categorías de nivel muy bajo (E y F). 
+        // Así no perdemos eventos que tengan otras nomenclaturas.
+        if (['E', 'F'].includes(ev.category)) return false;
 
         // 3. ¿Tiene Pértiga (Pole Vault)?
-        const pvDisciplines = ev.disciplines.filter(d => d.name === "Pole Vault");
+        const pvDisciplines = ev.disciplines ? ev.disciplines.filter(d => d.name === "Pole Vault") : [];
         if (pvDisciplines.length === 0) return false;
 
         // --- FILTROS DINÁMICOS (USUARIO) ---
@@ -78,10 +78,12 @@ function applyFilters() {
         // 8. Nivel específico
         if (level !== 'all' && ev.category !== level) return false;
 
-        // 9. Rango de Fechas
+        // 9. Rango de Fechas (Corregido para no mutar el objeto original)
         if (dateStart && dateEnd) {
             const evTime = new Date(ev.startDate).setHours(0,0,0,0);
-            if (evTime < dateStart.setHours(0,0,0,0) || evTime > dateEnd.setHours(0,0,0,0)) return false;
+            const start = new Date(dateStart).setHours(0,0,0,0);
+            const end = new Date(dateEnd).setHours(0,0,0,0);
+            if (evTime < start || evTime > end) return false;
         }
 
         return true;
@@ -104,15 +106,16 @@ function renderEvents(events) {
         const genderLabel = isBoth ? "M / F" : (pvGenders.includes('Men') ? "MASCULINO" : "FEMENINO");
         const genderClass = isBoth ? "tag-both" : (pvGenders.includes('Men') ? "tag-m" : "tag-f");
 
-        // Lógica de Niveles
-        let levelName = "";
-        let levelClass = `level-${ev.category?.toLowerCase()}`;
+        // Lógica de Niveles y Colores (Adaptada al CSS de tu versión antigua)
+        let levelName = ev.category || "N/A";
+        let levelClass = "level-silver"; // Por defecto, si no es ninguna, le ponemos silver (como tenías antes)
+        
         switch(ev.category) {
-            case 'A': levelName = "GOLD"; break;
-            case 'B': levelName = "SILVER"; break;
-            case 'C': levelName = "BRONZE"; break;
-            case 'D': levelName = "CHALLENGER"; break;
-            default: levelName = ev.category;
+            case 'A': levelName = "GOLD"; levelClass = "level-gold"; break;
+            case 'B': levelName = "SILVER"; levelClass = "level-silver"; break;
+            case 'C': levelName = "BRONZE"; levelClass = "level-bronze"; break;
+            case 'D': levelName = "CHALLENGER"; levelClass = "level-challenger"; break;
+            default: levelName = ev.category || "UNRATED"; levelClass = "level-silver";
         }
 
         const card = document.createElement('div');
@@ -140,7 +143,14 @@ function openModal(ev) {
     document.getElementById('modal-title').innerText = ev.name;
     document.getElementById('modal-location').innerText = ev.venue;
     document.getElementById('modal-area').innerText = ev.area;
-    document.getElementById('modal-cat').innerText = ev.category;
+    
+    // Mostramos el nombre adaptado (GOLD, CHALLENGER, etc) en lugar de la letra en el modal
+    let catName = ev.category;
+    if(catName === 'A') catName = 'GOLD';
+    if(catName === 'B') catName = 'SILVER';
+    if(catName === 'C') catName = 'BRONZE';
+    if(catName === 'D') catName = 'CHALLENGER';
+    document.getElementById('modal-cat').innerText = catName || 'N/A';
     
     const pvGenders = ev.disciplines.filter(d => d.name === "Pole Vault").map(d => d.gender);
     document.getElementById('modal-vault').innerText = pvGenders.join(' & ');
@@ -175,15 +185,22 @@ function formatDate(dateString) {
 }
 
 function updateFilterOptions() {
-    // Solo tomamos en cuenta los eventos que pasarían el filtro base (Pértiga + Europa)
+    // Solo tomamos en cuenta los eventos que pasarían el filtro base (Pértiga + Europa + Sin E/F)
     const baseEvents = allEvents.filter(ev => 
-        ev.area === "Europe" && ev.disciplines.some(d => d.name === "Pole Vault")
+        ev.area === "Europe" && 
+        !['E', 'F'].includes(ev.category) &&
+        ev.disciplines && ev.disciplines.some(d => d.name === "Pole Vault")
     );
 
     // Actualizar Países
     const countries = [...new Set(baseEvents.map(ev => getCountryCode(ev.venue)))].sort();
     countrySelect.innerHTML = '<option value="all">Países</option>' + 
         countries.map(c => `<option value="${c}">${c}</option>`).join('');
+
+    // Actualizar Niveles (Solo los que existan en la DB)
+    const levels = [...new Set(baseEvents.map(ev => ev.category))].filter(Boolean).sort();
+    levelSelect.innerHTML = '<option value="all">Niveles</option>' + 
+        levels.map(l => `<option value="${l}">${l}</option>`).join('');
 
     // Actualizar Meses
     const monthNames = { "01": "Enero", "02": "Febrero", "03": "Marzo", "04": "Abril", "05": "Mayo", "06": "Junio", "07": "Julio", "08": "Agosto", "09": "Septiembre", "10": "Octubre", "11": "Noviembre", "12": "Diciembre" };
@@ -199,11 +216,15 @@ function setupFlatpickr() {
             dateFormat: "d/m/y",
             theme: "dark",
             locale: { firstDayOfWeek: 1 },
+            disableMobile: "true",
             onChange: function(selectedDates) {
                 if (selectedDates.length === 2) {
                     dateStart = selectedDates[0];
                     dateEnd = selectedDates[1];
-                    clearDateBtn.style.display = "inline-block";
+                    if(clearDateBtn) clearDateBtn.style.display = "inline-block";
+                } else {
+                    dateStart = null;
+                    dateEnd = null;
                 }
                 applyFilters();
             }
