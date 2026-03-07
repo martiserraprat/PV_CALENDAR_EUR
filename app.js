@@ -159,11 +159,17 @@ function openModal(ev) {
     
     document.getElementById('modal-date-tag').innerText = new Date(ev.startDate).toLocaleDateString('es-ES', { dateStyle: 'long' });
 
-    // Enlaces
+    // Enlaces (CORREGIDO PARA EVITAR ERROR 404)
     const linksCont = document.getElementById('modal-links');
     linksCont.innerHTML = '';
-    if (ev.links?.web) linksCont.innerHTML += `<a href="${ev.links.web}" target="_blank" class="link-btn"><i class="fas fa-external-link-alt"></i> Web</a>`;
-    if (ev.links?.results) linksCont.innerHTML += `<a href="${ev.links.results}" target="_blank" class="link-btn"><i class="fas fa-poll"></i> Resultados</a>`;
+    if (ev.links?.web) {
+        const safeWebUrl = formatUrl(ev.links.web);
+        linksCont.innerHTML += `<a href="${safeWebUrl}" target="_blank" class="link-btn"><i class="fas fa-external-link-alt"></i> Web</a>`;
+    }
+    if (ev.links?.results) {
+        const safeResultsUrl = formatUrl(ev.links.results);
+        linksCont.innerHTML += `<a href="${safeResultsUrl}" target="_blank" class="link-btn"><i class="fas fa-poll"></i> Resultados</a>`;
+    }
 
     // Contactos (MEJORADO con Título y Teléfono)
     const contactCont = document.getElementById('modal-contacts');
@@ -187,6 +193,16 @@ function openModal(ev) {
 }
 
 // --- 5. FUNCIONES AUXILIARES ---
+
+// NUEVA FUNCIÓN PARA ARREGLAR LAS URLs
+function formatUrl(url) {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+        return url;
+    }
+    return 'https://' + url;
+}
+
 function getCountryCode(venue) {
     const match = venue.match(/\(([^)]+)\)$/); 
     return match ? match[1].toUpperCase() : "INT";
