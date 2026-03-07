@@ -24,6 +24,9 @@ async function init() {
         if (!response.ok) throw new Error("Error al obtener el JSON");
         allEvents = await response.json();
         
+        // --- NUEVO: Ordenar por fecha (de más temprano a más tarde) ---
+        allEvents.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+        
         setupFlatpickr();
         updateFilterOptions();
         applyFilters();
