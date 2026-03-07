@@ -1,0 +1,245 @@
+// --- CONFIGURACIÓN ---
+const JSON_URL = './eventos_2026.json';
+
+// --- ESTADO DE LA APP ---
+let allEvents = [];
+let currentGender = 'all';
+let dateStart = null;
+let dateEnd = null;
+
+// --- REFERENCIAS HTML ---
+const eventGrid = document.getElementById('event-grid');
+const searchInput = document.getElementById('search-input');
+const monthSelect = document.getElementById('filter-month');
+const countrySelect = document.getElementById('filter-country');
+const levelSelect = document.getElementById('filter-level');
+const eventCountText = document.getElementById('event-count');
+const genderButtons = document.querySelectorAll('.g-btn');
+const clearDateBtn = document.getElementById('clear-date');
+
+// --- 1. CARGA E INICIALIZACIÓN ---
+async function init() {
+    try {
+        const response = await fetch(JSON_URL);
+        if (!response.ok) throw new Error("Error al obtener el JSON");
+        allEvents = await response.json();
+        
+        setupFlatpickr();
+        updateFilterOptions();
+        applyFilters();
+    } catch (error) {
+        console.error("Error:", error);
+        eventCountText.innerText = "Error cargando base de datos";
+    }
+}
+
+// --- 2. FILTRADO MAESTRO (Aquí ocurre la magia) ---
+function applyFilters() {
+    const search = (searchInput.value || "").toLowerCase();
+    const month = monthSelect.value;
+    const selectedCode = countrySelect.value;
+    const level = levelSelect.value;
+
+    const filtered = allEvents.filter(ev => {
+        // --- FILTROS FIJOS (LOS QUE TENÍA TU SCRAPER) ---
+        
+        // 1. Solo Europa
+        if (ev.area !== "Europe") return false;
+
+        // 2. Solo categorías A, B, C, D (Excluimos E y F si las hubiera)
+        const validCategories = ['A', 'B', 'C', 'D'];
+        if (!validCategories.includes(ev.category)) return false;
+
+        // 3. ¿Tiene Pértiga (Pole Vault)?
+        const pvDisciplines = ev.disciplines.filter(d => d.name === "Pole Vault");
+        if (pvDisciplines.length === 0) return false;
+
+        // --- FILTROS DINÁMICOS (USUARIO) ---
+
+        // 4. Género (Pértiga)
+        if (currentGender !== 'all') {
+            const targetGender = currentGender === '🚹' ? 'Men' : 'Women';
+            if (!pvDisciplines.some(d => d.gender === targetGender)) return false;
+        }
+
+        // 5. Búsqueda por texto (Nombre o Ciudad)
+        const matchesSearch = ev.name.toLowerCase().includes(search) || 
+                              ev.venue.toLowerCase().includes(search);
+        if (!matchesSearch) return false;
+
+        // 6. Mes
+        const eventMonth = ev.startDate.split('-')[1]; // Extrae "05" de "2026-05-20"
+        if (month !== 'all' && eventMonth !== month) return false;
+
+        // 7. País
+        const eventCountry = getCountryCode(ev.venue);
+        if (selectedCode !== 'all' && eventCountry !== selectedCode) return false;
+
+        // 8. Nivel específico
+        if (level !== 'all' && ev.category !== level) return false;
+
+        // 9. Rango de Fechas
+        if (dateStart && dateEnd) {
+            const evTime = new Date(ev.startDate).setHours(0,0,0,0);
+            if (evTime < dateStart.setHours(0,0,0,0) || evTime > dateEnd.setHours(0,0,0,0)) return false;
+        }
+
+        return true;
+    });
+
+    renderEvents(filtered);
+}
+
+// --- 3. RENDERIZADO DE TARJETAS ---
+function renderEvents(events) {
+    eventGrid.innerHTML = '';
+    eventCountText.innerText = `${events.length} Competiciones`;
+
+    events.forEach(ev => {
+        const dateStr = formatDate(ev.startDate);
+        
+        // Lógica de etiquetas de género
+        const pvGenders = ev.disciplines.filter(d => d.name === "Pole Vault").map(d => d.gender);
+        const isBoth = pvGenders.includes('Men') && pvGenders.includes('Women');
+        const genderLabel = isBoth ? "M / F" : (pvGenders.includes('Men') ? "MASCULINO" : "FEMENINO");
+        const genderClass = isBoth ? "tag-both" : (pvGenders.includes('Men') ? "tag-m" : "tag-f");
+
+        // Lógica de Niveles
+        let levelName = "";
+        let levelClass = `level-${ev.category?.toLowerCase()}`;
+        switch(ev.category) {
+            case 'A': levelName = "GOLD"; break;
+            case 'B': levelName = "SILVER"; break;
+            case 'C': levelName = "BRONZE"; break;
+            case 'D': levelName = "CHALLENGER"; break;
+            default: levelName = ev.category;
+        }
+
+        const card = document.createElement('div');
+        card.className = 'event-card';
+        card.innerHTML = `
+            <span class="card-date"><i class="far fa-calendar-check"></i> ${dateStr}</span>
+            <h3>${ev.name}</h3>
+            <div class="location-info">
+                <i class="fas fa-map-marker-alt"></i> ${ev.venue}
+            </div>
+            <div class="card-tags">
+                <span class="tag ${genderClass}">${genderLabel}</span>
+                <span class="tag ${levelClass}">${levelName}</span>
+            </div>
+        `;
+        card.onclick = () => openModal(ev);
+        eventGrid.appendChild(card);
+    });
+}
+
+// --- 4. VENTANA MODAL ---
+function openModal(ev) {
+    const modal = document.getElementById('event-modal');
+    
+    document.getElementById('modal-title').innerText = ev.name;
+    document.getElementById('modal-location').innerText = ev.venue;
+    document.getElementById('modal-area').innerText = ev.area;
+    document.getElementById('modal-cat').innerText = ev.category;
+    
+    const pvGenders = ev.disciplines.filter(d => d.name === "Pole Vault").map(d => d.gender);
+    document.getElementById('modal-vault').innerText = pvGenders.join(' & ');
+    
+    document.getElementById('modal-date-tag').innerText = new Date(ev.startDate).toLocaleDateString('es-ES', { dateStyle: 'long' });
+
+    // Enlaces
+    const linksCont = document.getElementById('modal-links');
+    linksCont.innerHTML = '';
+    if (ev.links?.web) linksCont.innerHTML += `<a href="${ev.links.web}" target="_blank" class="link-btn">Web</a>`;
+    if (ev.links?.results) linksCont.innerHTML += `<a href="${ev.links.results}" target="_blank" class="link-btn">Resultados</a>`;
+
+    // Contactos
+    const contactCont = document.getElementById('modal-contacts');
+    contactCont.innerHTML = ev.contact && ev.contact.length > 0 
+        ? ev.contact.map(p => `<div class="contact-box"><strong>${p.name}</strong><br>${p.email || 'No disponible'}</div>`).join('')
+        : '<p>Sin contactos disponibles.</p>';
+
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+// --- 5. FUNCIONES AUXILIARES ---
+function getCountryCode(venue) {
+    const match = venue.match(/\(([^)]+)\)$/); 
+    return match ? match[1].toUpperCase() : "INT";
+}
+
+function formatDate(dateString) {
+    const d = new Date(dateString);
+    return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+}
+
+function updateFilterOptions() {
+    // Solo tomamos en cuenta los eventos que pasarían el filtro base (Pértiga + Europa)
+    const baseEvents = allEvents.filter(ev => 
+        ev.area === "Europe" && ev.disciplines.some(d => d.name === "Pole Vault")
+    );
+
+    // Actualizar Países
+    const countries = [...new Set(baseEvents.map(ev => getCountryCode(ev.venue)))].sort();
+    countrySelect.innerHTML = '<option value="all">Países</option>' + 
+        countries.map(c => `<option value="${c}">${c}</option>`).join('');
+
+    // Actualizar Meses
+    const monthNames = { "01": "Enero", "02": "Febrero", "03": "Marzo", "04": "Abril", "05": "Mayo", "06": "Junio", "07": "Julio", "08": "Agosto", "09": "Septiembre", "10": "Octubre", "11": "Noviembre", "12": "Diciembre" };
+    const months = [...new Set(baseEvents.map(ev => ev.startDate.split('-')[1]))].sort();
+    monthSelect.innerHTML = '<option value="all">Meses</option>' + 
+        months.map(m => `<option value="${m}">${monthNames[m]}</option>`).join('');
+}
+
+function setupFlatpickr() {
+    if (window.flatpickr) {
+        window.flatpickr("#date-range", {
+            mode: "range",
+            dateFormat: "d/m/y",
+            theme: "dark",
+            locale: { firstDayOfWeek: 1 },
+            onChange: function(selectedDates) {
+                if (selectedDates.length === 2) {
+                    dateStart = selectedDates[0];
+                    dateEnd = selectedDates[1];
+                    clearDateBtn.style.display = "inline-block";
+                }
+                applyFilters();
+            }
+        });
+    }
+}
+
+// --- 6. LISTENERS ---
+searchInput.addEventListener('input', applyFilters);
+monthSelect.addEventListener('change', applyFilters);
+countrySelect.addEventListener('change', applyFilters);
+levelSelect.addEventListener('change', applyFilters);
+
+genderButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+        genderButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentGender = btn.dataset.gender;
+        applyFilters();
+    });
+});
+
+document.getElementById('close-modal').onclick = () => {
+    document.getElementById('event-modal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+};
+
+if (clearDateBtn) {
+    clearDateBtn.onclick = () => {
+        dateStart = null;
+        dateEnd = null;
+        document.getElementById('date-range')._flatpickr.clear();
+        clearDateBtn.style.display = "none";
+        applyFilters();
+    };
+}
+
+// Iniciar
+init();
