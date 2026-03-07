@@ -181,7 +181,7 @@ function getCountryCode(venue) {
 
 function formatDate(dateString) {
     const d = new Date(dateString);
-    return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+    return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: '2-digit'});
 }
 
 function updateFilterOptions() {
