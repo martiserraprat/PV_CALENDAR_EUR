@@ -1,0 +1,16 @@
+{
+  "short_name": "PV Caledar 2026",
+  "name": "PV Caledar 2026",
+  "icons": [
+    {
+      "src": "icon.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/index.html",
+  "display": "standalone",
+  "theme_color": "#050505",
+  "background_color": "#050505"
+}

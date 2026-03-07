@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PV COMPES AL 2026</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#050505">
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+</head>
+<body>
+    <div class="top-gradient"></div>
+    
+    <header class="main-header">
+        <h1>PV<span>COMPES AL 2026</span></h1>
+        <p id="event-count">Cargando competiciones...</p>
+        
+        <div class="search-container">
+            <i class="fas fa-search"></i>
+            <input type="text" id="search-input" placeholder="Buscar por evento, ciudad o país...">
+        </div>
+    </header>
+
+    <nav class="filter-navigation">
+        <div class="filter-wrapper">
+            <div class="custom-select">
+                <i class="fas fa-calendar-alt"></i>
+                <select id="filter-month">
+                    <option value="all">Cualquier Mes</option>
+                </select>
+            </div>
+
+            <div class="custom-select">
+                <i class="fas fa-globe-europe"></i>
+                <select id="filter-country">
+                    <option value="all">Países</option>
+                </select>
+            </div>
+
+            <div class="custom-select">
+                <i class="fas fa-layer-group"></i>
+                <select id="filter-level">
+                    <option value="all">Niveles</option>
+                </select>
+            </div>
+
+            <div class="gender-pill">
+                <button class="g-btn active" data-gender="all">Todos</button>
+                <button class="g-btn" data-gender="🚹">🚹 M</button>
+                <button class="g-btn" data-gender="🚺">🚺 F</button>
+            </div>
+
+            <div class="custom-select">
+                <i class="fas fa-calendar-alt"></i>
+                <input type="text" id="date-range" placeholder="Filtrar por fechas...">
+                <i class="fas fa-times" id="clear-date" style="display: none; cursor: pointer; margin-left: 10px; color: #ff4d4d;"></i>
+            </div>
+        </div>
+    </nav>
+
+    <main id="event-grid" class="event-grid">
+        </main>
+
+    <script type="module" src="app.js"></script>
+
+    <div id="event-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button id="close-modal"><i class="fas fa-times"></i></button>
+            <div class="modal-header">
+                <span id="modal-date-tag" class="card-date"></span>
+                <h2 id="modal-title"></h2>
+                <p id="modal-location" class="location-info"></p>
+            </div>
+            <div class="modal-body">
+                <div class="info-section">
+                    <h4><i class="fas fa-info-circle"></i> Información del Evento</h4>
+                    <p><strong>Área:</strong> <span id="modal-area"></span></p>
+                    <p><strong>Categoría:</strong> <span id="modal-cat"></span></p>
+                    <p><strong>Género:</strong> <span id="modal-vault"></span></p>
+                </div>
+                <div class="info-section" id="links-section">
+                    <h4><i class="fas fa-link"></i> Enlaces oficiales</h4>
+                    <div id="modal-links" class="link-buttons"></div>
+                </div>
+                <div class="info-section">
+                    <h4><i class="fas fa-user-friends"></i> Contacto</h4>
+                    <div id="modal-contacts"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
